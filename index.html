@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoTour — Маршруты с местами по пути</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <!-- ВЕРХНЯЯ ШАПКА: ПОИСК ПО ВСЕМУ МИРУ И ГЕОЛОКАЦИЯ -->
+  <header class="site-header">
+    <div class="header-top-row">
+      <div class="brand-badge">
+        <svg class="svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/>
+        </svg>
+        <span>GeoTour</span>
+      </div>
+
+      <div class="search-box-wrapper">
+        <form class="input_holder" id="searchForm">
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Поиск любого города, улицы или места в мире..."
+            autocomplete="off"
+          >
+          <button type="submit">Найти</button>
+        </form>
+        <div id="searchSuggestions" class="suggestions-dropdown"></div>
+      </div>
+
+      <button id="locateMeBtn" class="icon-action-btn secondary" type="button" title="Моё местоположение">
+        <svg class="svg-icon" viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/>
+        </svg>
+        <span>Где я</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- СЛОИ КАРТЫ -->
+  <aside class="close-layer" id="layerAside">
+    <button class="sloi" id="toggleLayersBtn" type="button">
+      <span class="sloi-left">
+        <svg class="svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+          <path d="M12 13.935 20.426 9.5 12 5.065 3.574 9.5 12 13.935Zm-9.733-4.878 9.5-5a.5.5 0 0 1 .466 0l9.5 5a.5.5 0 0 1 0 .886l-9.5 5a.5.5 0 0 1-.466 0l-9.5-5a.5.5 0 0 1 0-.886ZM12 16.935l9.267-4.878a.5.5 0 0 1 .466.885l-9.5 5a.5.5 0 0 1-.466 0l-9.5-5a.5.5 0 0 1 .466-.885L12 16.935Zm0 3 9.267-4.878a.5.5 0 0 1 .466.885l-9.5 5a.5.5 0 0 1-.466 0l-9.5-5a.5.5 0 0 1 .466-.885L12 19.935Z"/>
+        </svg>
+        <span>Слои</span>
+      </span>
+      <span class="sloi-chevron">▼</span>
+    </button>
+
+    <div class="layer-options">
+      <div class="layer-group-title">Вид карты</div>
+      <label>
+        <span>Стандартная OpenStreetMap</span>
+        <input type="radio" name="baseLayer" value="osm" checked>
+      </label>
+      <label>
+        <span>Спутник Esri</span>
+        <input type="radio" name="baseLayer" value="satellite">
+      </label>
+      <label>
+        <span>Топографическая</span>
+        <input type="radio" name="baseLayer" value="topo">
+      </label>
+    </div>
+  </aside>
+
+  <!-- БОКОВАЯ ПАНЕЛЬ МАРШРУТИЗАТОРА -->
+  <aside class="places-panel" id="routePanel">
+    <div class="route-panel-header">
+      <div class="route-header-title">
+        <h2>Маршрутизатор</h2>
+        <span class="route-status-pill" id="routeModeStatus">
+          <svg class="svg-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7z"/></svg>
+          <span>Пеший</span>
+        </span>
+      </div>
+
+      <div class="travel-modes" role="group" aria-label="Способ передвижения">
+        <button class="mode-btn active" type="button" data-mode="foot" title="Пешеходный">
+          <svg class="svg-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7z"/></svg>
+          <span>Пешком</span>
+        </button>
+        <button class="mode-btn" type="button" data-mode="car" title="Автомобильный">
+          <svg class="svg-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM19 17H5v-4.66l.12-.34h13.77l.11.34V17z"/><circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/></svg>
+          <span>На авто</span>
+        </button>
+        <button class="mode-btn" type="button" data-mode="bike" title="Велосипедный">
+          <svg class="svg-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M15.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM5 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm0 8.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zm7.8-10l-1.4-2.4c-.4-.7-1.1-1.1-1.9-1.1H6v2h3.5l1.8 3.1-2.9 5.3c-.4.7-.1 1.6.6 2 .2.1.5.2.7.2.5 0 1-.3 1.3-.7L13.5 14l2.5 2.5V20h2v-4.5l-3-3 1.1-2.5c1 1.2 2.5 2 4.4 2v-2c-1.7 0-3-.9-3.7-2.1l-.8-1.4zM19 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm0 8.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5z"/></svg>
+          <span>Вело</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="route-builder-box">
+      <!-- ТОЧКА А -->
+      <div class="input-with-suggestions">
+        <div class="route-point-row">
+          <span class="point-badge start" title="Точка старта (А)">А</span>
+          <input
+            id="routeFromInput"
+            type="text"
+            placeholder="Откуда: начните писать адрес или объект..."
+            autocomplete="off"
+          >
+          <button id="pickFromMapBtn" class="mini-icon-btn" type="button" title="Выбрать точку А кликом на карте">
+            <svg class="svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          </button>
+          <button id="myLocToStartBtn" class="mini-icon-btn" type="button" title="Подставить моё местоположение">
+            <svg class="svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+          </button>
+        </div>
+        <div id="fromSuggestions" class="suggestions-dropdown"></div>
+      </div>
+
+      <!-- КНОПКА СМЕНЫ А <-> Б -->
+      <div class="swap-row">
+        <button id="swapRouteBtn" class="swap-btn" type="button" title="Поменять местами точку А и точку Б">
+          <svg class="svg-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4"/></svg>
+          <span>Поменять местами (А ⇄ Б)</span>
+        </button>
+      </div>
+
+      <!-- ТОЧКА Б -->
+      <div class="input-with-suggestions">
+        <div class="route-point-row">
+          <span class="point-badge end" title="Точка назначения (Б)">Б</span>
+          <input
+            id="routeToInput"
+            type="text"
+            placeholder="Куда: начните писать адрес или объект..."
+            autocomplete="off"
+          >
+          <button id="pickToMapBtn" class="mini-icon-btn" type="button" title="Выбрать точку Б кликом на карте">
+            <svg class="svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          </button>
+        </div>
+        <div id="toSuggestions" class="suggestions-dropdown"></div>
+      </div>
+
+      <!-- КНОПКИ ДЕЙСТВИЙ -->
+      <div class="route-controls-row">
+        <button id="buildRouteBtn" class="btn-primary-full" type="button">
+          <svg class="svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+          <span>Построить маршрут</span>
+        </button>
+        <button id="clearRouteBtn" class="btn-secondary-outline" type="button" title="Сбросить точки и маршрут">
+          Сброс
+        </button>
+      </div>
+    </div>
+
+    <!-- КАРТОЧКА СВОДКИ МАРШРУТА -->
+    <div id="routeSummaryBox" class="route-summary-card" style="display: none;">
+      <div class="route-metrics">
+        <div class="metric-box">
+          <strong id="routeDistVal">0 км</strong>
+          <span>Дистанция</span>
+        </div>
+        <div class="metric-box">
+          <strong id="routeTimeVal">0 мин</strong>
+          <span>В пути</span>
+        </div>
+        <div class="metric-box highlight">
+          <strong id="alongCountVal">0</strong>
+          <span>Мест по пути</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- БЛОК: МЕСТА ПО ПУТИ (КАФЕ, ПАМЯТНИКИ, МУЗЕИ) -->
+    <div id="alongRouteSection" class="along-route-section" style="display: none;">
+      <div class="along-header">
+        <div class="along-title">
+          <span class="along-title-text">
+            <svg class="svg-icon" viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 2l2.4 7.2L21.6 12l-7.2 2.8L12 22l-2.4-7.2L2.4 12l7.2-2.8L12 2z"/></svg>
+            Можно зайти по пути
+          </span>
+          <span class="along-badge" id="alongBadge">0</span>
+        </div>
+        <div class="along-filter-chips">
+          <button type="button" class="chip active" data-poi-filter="all">Все</button>
+          <button type="button" class="chip" data-poi-filter="food">
+            <svg class="svg-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3zM2 19h18v2H2z"/></svg>
+            <span>Кафе/Еда</span>
+          </button>
+          <button type="button" class="chip" data-poi-filter="sights">
+            <svg class="svg-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M4 22h16v-2H4v2zM19 8V6h-2V4c0-1.1-.9-2-2-2h-6c-1.1 0-2 .9-2 2v2H5v2h2v10h10V8h2zm-4-4v2h-6V4h6zm-6 6h6v8h-6v-8z"/></svg>
+            <span>Памятники</span>
+          </button>
+          <button type="button" class="chip" data-poi-filter="museums">
+            <svg class="svg-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 1L2 6v2h20V6L12 1zm-8 8v9h3v-9H4zm5 0v9h3v-9H9zm5 0v9h3v-9h-3zm5 0v9h3v-9h-3zM2 20v2h20v-2H2z"/></svg>
+            <span>Музеи</span>
+          </button>
+        </div>
+      </div>
+      <div id="alongRouteList" class="along-route-list"></div>
+    </div>
+
+    <!-- ПОШАГОВЫЙ СПИСОК МАНЕВРОВ -->
+    <div class="steps-container-header">
+      <span>Пошаговые указания</span>
+      <span class="steps-hint">Кликните на шаг для зума</span>
+    </div>
+
+    <div id="routeSteps" class="steps-list">
+      <div class="route-welcome-box">
+        <p><strong>Построение маршрута с местами по пути:</strong></p>
+        <ul>
+          <li>Введите начальную и конечную точку или выберите их кликом по карте.</li>
+          <li>При построении маршрута карта автоматически найдёт <strong>кафе, памятники и музеи</strong> прямо вдоль вашего пути.</li>
+          <li>Кликните на любое место в списке, чтобы рассмотреть его на карте.</li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+  <!-- КАРТА LEAFLET -->
+  <main id="map" aria-label="Интерактивная карта маршрутов"></main>
+
+  <!-- СТАТУС БАР -->
+  <div id="status" class="status">
+    Карта готова к работе • Укажите точки А и Б
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
